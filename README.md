@@ -39,6 +39,4 @@ This application is tested on Google Chrome browser running on Windows 10 64-bit
 * Improper rendering when '<' and/or '>' is within input.
 
 ### Contact ###
-Twitter: @euclapetus/@exclaebur
-E-mail: claedonica@gmail.com
-### Contact ###
+_Twitter:_ @euclaeptus/@exclaebur | _E-mail:_ claedonica@gmail.com
