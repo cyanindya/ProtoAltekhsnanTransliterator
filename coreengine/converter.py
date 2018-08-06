@@ -9,6 +9,7 @@
 import re # regex
 from timeit import default_timer as timer
 
+# Defines base character groups of Proto-Altekhsnan writing system
 characterGroups = {
     "a" : ('a'),
     "non-a" : ('e', '\u00e9', 'i', 'o', 'u', '\ue001' '\ue000', '\ue002',
@@ -20,11 +21,24 @@ characterGroups = {
     # "consonants": ('b', 'c', 'd', 'f', 'g', 'h', 'j', 'k', 'l', 'm', 'n',
         # 'p', 'q', 'r', 's', 't', 'v', 'w', 'x', 'sy', 'y', 'z', '\ue004', 'ng',
         # '\ue005', 'ny'),
-    "vr": ('-'),
+    "vr": ('-'), # wowel removal sign
     "separator": ('='),
     "etc": ('<', '>', ' '),
 }
 
+# Dictionary for replacement of certain characters with their single Unicode character
+single_char_substitute = {
+    u'sy' : u'x',
+    u'ee' : u'\u00e9',
+    u'hh' : u'\ue000',
+    u'nn' : u'\ue001',
+    u'th' : u'\ue002',
+    u'eu' : u'\ue003',
+    u'ng' : u'\ue004',
+    u'ny' : u'\ue005',
+}
+
+# The crude regex pattern required for substitution later
 regex_groups = {
     "vowels_all" : "a" + ''.join(characterGroups["non-a"]) + "-",
     "vowels_non_a" : ''.join(characterGroups["non-a"]) + "-",
@@ -59,39 +73,41 @@ def separate_syllables_regex(word):
     rgx_pattern_vowels = 'e[eu]*|nn|hh|[aiou\u00e9-]' # th cannot be put here due to its complicated position
     rgx_pattern_sp_consonants = 'n[gy]*|sy*' # ng*, ny*, n*, sy*, s*
     rgx_pattern_t = 't(e[eu]*|nn|[ahiou\u00e9-])' # ng*, ny*, n*, sy*, s*
-    rgx_pattern_consonants = '[^aeinostu\u00e9 =-]'
+    rgx_pattern_consonants = '[^aeinostu\u00e9-]'
     
-    # ((n[gy]*|sy*|[^aeinostu\u00e9 =-])(e[eu]*|nn|hh|[aiou\u00e9-]))|(t(e[eu]*|nn|[ahiou\u00e9-]))|(e[eu]*|nn|hh|[aiou\u00e9-])
-    rgx_pattern_full = '(({0}|{1})({2}))|({3})|({4})'.format(rgx_pattern_sp_consonants, rgx_pattern_consonants,
+    # =|((n[gy]*|sy*|[^aeinostu\u00e9 =-])(e[eu]*|nn|hh|[aiou\u00e9-]))|(t(e[eu]*|nn|[ahiou\u00e9-]))|(e[eu]*|nn|hh|[aiou\u00e9-])
+    rgx_pattern_full = '=|((({0}|{1})({2}))|({3})|({4}))'.format(rgx_pattern_sp_consonants, rgx_pattern_consonants,
             rgx_pattern_vowels, rgx_pattern_t, rgx_pattern_vowels)
     
-    for syllable in re.finditer(rgx_pattern_full, word):
+    for syl in re.finditer(rgx_pattern_full, word):
+        syllable = syl.group(0)
+        
         # To make clustering easier, substitute several characters such as "th" with their
         # Unicode variant
-        if 'sy' in syllable:
-            syllable = syllable.replace(u'sy', u'x')
-        if 'ee' in syllable:
-            syllable = syllable.replace(u'ee', u'\u00e9')
-        if 'hh' in syllable:
-            syllable = syllable.replace(u'hh', u'\ue000')
-        if 'nn' in syllable:
-            syllable = syllable.replace(u'nn', u'\ue001')
-        if 'th' in syllable:
-            syllable = syllable.replace(u'th', u'\ue002')
-        if 'eu' in syllable:
-            syllable = syllable.replace(u'eu', u'\ue003')
-        if 'ng' in syllable:
-            syllable = syllable.replace(u'ng', u'\ue004')
-        if 'ny' in syllable:
-            syllable = syllable.replace(u'ny', u'\ue005')
+        # Must be done in this way because Python is a huge jerk
+        ch = [i for i in list(single_char_substitute.keys()) if i in syllable]
+        if ch:
+            syllable = syllable.replace(ch[0], single_char_substitute[ch[0]])
+        
         
         # If the syllable is not in modified form (e.g. 'ha'), remove the 'a' to make
         # conversion easier
-        if len(syllable) > 1 and syllable[-1] == 'a':
+        if len(syllable) > 1 and any(cons in syllable for cons in characterGroups['consonants']) and syllable[-1] == 'a':
             syllable = syllable[:-1]
         
         syllables.append(syllable)
     
+    # for consonant followed by vowels h, n, and th, join the separated consonant with the vowel.
+    for index in range(len(syllables)):
+        # To handle accidentally choosing the last item because of the -1 thing
+        prevIndex = index-1 if (index - 1 >= 0) else 0
+        
+        if (len(syllables[prevIndex]) == 1 and syllables[prevIndex]
+            in characterGroups["consonants"]) and (syllables[index] in
+            ("\ue000", "\ue001", "\ue002")):
+            syllables[prevIndex] = ''.join(syllables[prevIndex:index+1])
+            syllables[index] = ''
+            syllables.remove('')
     
     return syllables
 
@@ -226,6 +242,7 @@ def cluster_syllables(syllables):
         while '' in cluster:
             cluster.remove('')
     
+    # print(clusters)
     
     return clusters
     
