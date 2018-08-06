@@ -97,107 +97,107 @@ def separate_syllables_regex(word):
 
     
 # The next step is to break down each word into syllables in Proto-Altekhsnan
-def separate_syllables(word):
-    syllables = []
+# def separate_syllables(word):
+    # syllables = []
     
-    latin_vowel = u'aeiou\u00e9'
-    vowel_eraser = u'-'
+    # latin_vowel = u'aeiou\u00e9'
+    # vowel_eraser = u'-'
     
-    # 't' -> th
-    # 's' -> sy
-    # 'n' -> nn, ng, ny
-    # 'h' -> hh
-    t_connectors = latin_vowel + vowel_eraser + u'h'
-    s_connectors = latin_vowel + vowel_eraser + u'y'
-    h_connectors = latin_vowel + vowel_eraser + u'h'
-    n_connectors = latin_vowel + vowel_eraser + u'g' + u'y' + u'n'
+    # # 't' -> th
+    # # 's' -> sy
+    # # 'n' -> nn, ng, ny
+    # # 'h' -> hh
+    # t_connectors = latin_vowel + vowel_eraser + u'h'
+    # s_connectors = latin_vowel + vowel_eraser + u'y'
+    # h_connectors = latin_vowel + vowel_eraser + u'h'
+    # n_connectors = latin_vowel + vowel_eraser + u'g' + u'y' + u'n'
     
-    # break down into individual chars and reverse it
-    chars_list = list(word)
-    chars_list.reverse()
+    # # break down into individual chars and reverse it
+    # chars_list = list(word)
+    # chars_list.reverse()
     
-    syllable = u''
+    # syllable = u''
     
-    # We will use character indexing because we need to predict the next character
-    for ch in chars_list[::-1]:
+    # # We will use character indexing because we need to predict the next character
+    # for ch in chars_list[::-1]:
         
-        # Add the front-most character in the word to the syllable
-        syllable += chars_list.pop()
+        # # Add the front-most character in the word to the syllable
+        # syllable += chars_list.pop()
         
-        # Handle only as long as chars_list is not empty
-        if chars_list:
+        # # Handle only as long as chars_list is not empty
+        # if chars_list:
         
-            # By default, assume the character is a consonant
-            if ch not in (latin_vowel + vowel_eraser + u'='):
+            # # By default, assume the character is a consonant
+            # if ch not in (latin_vowel + vowel_eraser + u'='):
             
-                # Handle special cases.
-                if syllable[-1] == u'n':
-                    if (len(syllable) > 1 and syllable[-2] not in (u'n')) or len(syllable) == 1:
-                        if chars_list[-1] in n_connectors:
-                            continue
-                elif syllable[-1] == u't':
-                    if chars_list[-1] in t_connectors:
-                        continue
-                elif syllable[-1] == u'h':
-                    if (len(syllable) > 1 and syllable[-2] not in (u't', u'h')) or len(syllable) == 1:
-                        if chars_list[-1] in h_connectors:
-                            continue
-                elif syllable[-1] == u's':
-                    if chars_list[-1] in s_connectors:
-                        continue
-                else:
-                    continue
+                # # Handle special cases.
+                # if syllable[-1] == u'n':
+                    # if (len(syllable) > 1 and syllable[-2] not in (u'n')) or len(syllable) == 1:
+                        # if chars_list[-1] in n_connectors:
+                            # continue
+                # elif syllable[-1] == u't':
+                    # if chars_list[-1] in t_connectors:
+                        # continue
+                # elif syllable[-1] == u'h':
+                    # if (len(syllable) > 1 and syllable[-2] not in (u't', u'h')) or len(syllable) == 1:
+                        # if chars_list[-1] in h_connectors:
+                            # continue
+                # elif syllable[-1] == u's':
+                    # if chars_list[-1] in s_connectors:
+                        # continue
+                # else:
+                    # continue
             
-            else: # Otherwise, assume it's a vowel
-                # Handle special case for 'e' because it can be 'ee' or 'eu'            
-                if syllable[-1] == u'e':
-                    if (len(syllable) > 1 and syllable[-2] != u'e') or len(syllable) == 1:
-                        if chars_list[-1] in (u'e', u'u'):
-                            continue
+            # else: # Otherwise, assume it's a vowel
+                # # Handle special case for 'e' because it can be 'ee' or 'eu'            
+                # if syllable[-1] == u'e':
+                    # if (len(syllable) > 1 and syllable[-2] != u'e') or len(syllable) == 1:
+                        # if chars_list[-1] in (u'e', u'u'):
+                            # continue
                         
-        # To make clustering easier, substitute several characters such as "th" with their
-        # Unicode variant
-        if 'sy' in syllable:
-            syllable = syllable.replace(u'sy', u'x')
-        if 'ee' in syllable:
-            syllable = syllable.replace(u'ee', u'\u00e9')
-        if 'hh' in syllable:
-            syllable = syllable.replace(u'hh', u'\ue000')
-        if 'nn' in syllable:
-            syllable = syllable.replace(u'nn', u'\ue001')
-        if 'th' in syllable:
-            syllable = syllable.replace(u'th', u'\ue002')
-        if 'eu' in syllable:
-            syllable = syllable.replace(u'eu', u'\ue003')
-        if 'ng' in syllable:
-            syllable = syllable.replace(u'ng', u'\ue004')
-        if 'ny' in syllable:
-            syllable = syllable.replace(u'ny', u'\ue005')
+        # # To make clustering easier, substitute several characters such as "th" with their
+        # # Unicode variant
+        # if 'sy' in syllable:
+            # syllable = syllable.replace(u'sy', u'x')
+        # if 'ee' in syllable:
+            # syllable = syllable.replace(u'ee', u'\u00e9')
+        # if 'hh' in syllable:
+            # syllable = syllable.replace(u'hh', u'\ue000')
+        # if 'nn' in syllable:
+            # syllable = syllable.replace(u'nn', u'\ue001')
+        # if 'th' in syllable:
+            # syllable = syllable.replace(u'th', u'\ue002')
+        # if 'eu' in syllable:
+            # syllable = syllable.replace(u'eu', u'\ue003')
+        # if 'ng' in syllable:
+            # syllable = syllable.replace(u'ng', u'\ue004')
+        # if 'ny' in syllable:
+            # syllable = syllable.replace(u'ny', u'\ue005')
         
-        # If the syllable is not in modified form (e.g. 'ha'), remove the 'a' to make
-        # conversion easier
-        if len(syllable) > 1 and syllable[-1] == 'a':
-            syllable = syllable[:-1]
+        # # If the syllable is not in modified form (e.g. 'ha'), remove the 'a' to make
+        # # conversion easier
+        # if len(syllable) > 1 and syllable[-1] == 'a':
+            # syllable = syllable[:-1]
         
         
-        # Append the syllable to the syllables list, then reset
-        syllables.append(syllable)
-        syllable = u''
+        # # Append the syllable to the syllables list, then reset
+        # syllables.append(syllable)
+        # syllable = u''
     
-    # for consonant followed by vowels h, n, and th, join the separated consonant with the vowel.
-    for index in range(len(syllables)):
-        # To handle accidentally choosing the last item because of the -1 thing
-        prevIndex = index-1 if (index - 1 >= 0) else 0
+    # # for consonant followed by vowels h, n, and th, join the separated consonant with the vowel.
+    # for index in range(len(syllables)):
+        # # To handle accidentally choosing the last item because of the -1 thing
+        # prevIndex = index-1 if (index - 1 >= 0) else 0
         
-        if (len(syllables[prevIndex]) == 1 and syllables[prevIndex]
-            in characterGroups["consonants"]) and (syllables[index] in
-            ("\ue000", "\ue001", "\ue002")):
-            syllables[prevIndex] = ''.join(syllables[prevIndex:index+1])
-            syllables[index] = ''
-            syllables.remove('')
+        # if (len(syllables[prevIndex]) == 1 and syllables[prevIndex]
+            # in characterGroups["consonants"]) and (syllables[index] in
+            # ("\ue000", "\ue001", "\ue002")):
+            # syllables[prevIndex] = ''.join(syllables[prevIndex:index+1])
+            # syllables[index] = ''
+            # syllables.remove('')
     
     
-    return syllables
+    # return syllables
 
 # Group the syllables into clusters to be converted. The general rule of thumb for Proto-
 # Altekhsnan is that a cluster consists either four characters OR three syllables at most.
