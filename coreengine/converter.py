@@ -5,7 +5,7 @@
 # Global dictionary containing standard characters of Proto-Altekhsnan language
 # Define the group of characters according to the OpenType lookup.
 
-## TODO: implement regular expression for faster lookup
+## TODO: escape '<' and '>'
 import re # regex
 from timeit import default_timer as timer
 
@@ -43,6 +43,59 @@ def separate_words(sentence):
     
     return words
 
+# The next step is to break down each word into syllables in Proto-Altekhsnan
+def separate_syllables_regex(word):
+    syllables = []
+    
+    syllable = ''
+    
+    # The priority is as followes:
+    # Special consonants - nga, nya, sya - vowels a, e, i, o, u, eu, n, h, e-acute
+    # For s* (s and sy), this means s does not need to be included in regular consonants
+    # Ditto for t, since it's possible for it to be 'th' (becoming vowel)
+    # Regular consonants followed by vowel
+    # Special vowels - h, n, th, e-acute, eu
+    # Regular vowels
+    rgx_pattern_vowels = 'e[eu]*|nn|hh|[aiou\u00e9-]' # th cannot be put here due to its complicated position
+    rgx_pattern_sp_consonants = 'n[gy]*|sy*' # ng*, ny*, n*, sy*, s*
+    rgx_pattern_t = 't(e[eu]*|nn|[ahiou\u00e9-])' # ng*, ny*, n*, sy*, s*
+    rgx_pattern_consonants = '[^aeinostu\u00e9 =-]'
+    
+    # ((n[gy]*|sy*|[^aeinostu\u00e9 =-])(e[eu]*|nn|hh|[aiou\u00e9-]))|(t(e[eu]*|nn|[ahiou\u00e9-]))|(e[eu]*|nn|hh|[aiou\u00e9-])
+    rgx_pattern_full = '(({0}|{1})({2}))|({3})|({4})'.format(rgx_pattern_sp_consonants, rgx_pattern_consonants,
+            rgx_pattern_vowels, rgx_pattern_t, rgx_pattern_vowels)
+    
+    for syllable in re.finditer(rgx_pattern_full, word):
+        # To make clustering easier, substitute several characters such as "th" with their
+        # Unicode variant
+        if 'sy' in syllable:
+            syllable = syllable.replace(u'sy', u'x')
+        if 'ee' in syllable:
+            syllable = syllable.replace(u'ee', u'\u00e9')
+        if 'hh' in syllable:
+            syllable = syllable.replace(u'hh', u'\ue000')
+        if 'nn' in syllable:
+            syllable = syllable.replace(u'nn', u'\ue001')
+        if 'th' in syllable:
+            syllable = syllable.replace(u'th', u'\ue002')
+        if 'eu' in syllable:
+            syllable = syllable.replace(u'eu', u'\ue003')
+        if 'ng' in syllable:
+            syllable = syllable.replace(u'ng', u'\ue004')
+        if 'ny' in syllable:
+            syllable = syllable.replace(u'ny', u'\ue005')
+        
+        # If the syllable is not in modified form (e.g. 'ha'), remove the 'a' to make
+        # conversion easier
+        if len(syllable) > 1 and syllable[-1] == 'a':
+            syllable = syllable[:-1]
+        
+        syllables.append(syllable)
+    
+    
+    return syllables
+
+    
 # The next step is to break down each word into syllables in Proto-Altekhsnan
 def separate_syllables(word):
     syllables = []
@@ -412,7 +465,7 @@ def converter(sentence, forScrivener=False):
     
     # For each word, separate into syllables, then group into clusters
     for word in words:
-        syllables = separate_syllables(word)
+        syllables = separate_syllables_regex(word)
         clusters = cluster_syllables(syllables)
         
         # Finally, generate the converted word along with their Unicode code points
