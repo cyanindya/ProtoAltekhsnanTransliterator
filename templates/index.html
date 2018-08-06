@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Proto-Altekhsnan Unicode Converter</title>
+	<link rel="stylesheet" href="{{ url_for('static', filename='transliterator/css/styles.css') }}" />
+	<script type="text/javascript">
+	function copyText(id) {
+		var txt = document.getElementById(id);
+		
+		if (document.selection) {
+			var range = document.body.createTextRange();
+			range.moveToElementText(txt);
+			range.select().createTextRange();
+		} else if (window.getSelection) {
+			var range = document.createRange();
+			range.selectNode(txt);
+			window.getSelection().addRange(range);
+		}
+		
+		<!-- txt.focus(); -->
+		<!-- txt.select(); -->
+		document.execCommand("copy");
+	}
+	</script>
+</head>
+
+<body>
+	<div class='preface'>
+		<h3>Proto-Altekhsnan Text Converter</h3>
+		<p>This application is a (fairly) simple tool intended to manually generate Proto-Altekhsnan passage from plain text input. Normally, the positioning and clustering of the glyphs are conducted automatically using the OpenType lookup table feature in the Proto-Altekhsnan font file, which can be done in applications with OpenType lookup table support such as LibreOffice and WorldPad. However, for applications those do not support OpenType lookup feature such as Scrivener and Ren'Py, the glyphs have to be swapped and positioned manually, which is why this application is created.</p>
+		
+		<p>The Proto-Altekhsnan font file and the project files for this application can be downloaded from <a>here</a>.</p>
+	</div>
+	
+	<hr />
+	
+	<form action="" method="POST">
+		<div class="inputSection">
+			
+			<div class="row">
+				<div class="column-label">
+					<strong><label for="transliterator_input">Text</label></strong>
+				</div>
+				<div class="column-content">
+					<textarea rows=3 cols=100 id="transliterator_input" name="text_input" style="vertical-align:top">{% if query %}{{query}}{% endif %}</textarea>
+				</div>
+			</div>
+			
+			<div class="row">
+				<div class="column-label">
+					<strong>Options</strong>
+				</div>
+				<div class="column-content">
+					<input type="checkbox" id="scrivener_option" name="scrivener_checkbox" />
+					<label for ="scrivener_option">Swap the code points of 'h', 'n', and/or 'th' for Scrivener use.</label>
+				</div>
+			</div>
+			
+			<div class="row">
+				<div class="column-label">
+					<strong>Submit</strong>
+				</div>
+				<div class="column-content">
+					<input type="submit" />
+				</div>
+			</div>
+		
+		</div>
+	
+	<div class="resultSection">
+		<div class="row">
+			<div class="column-label"><strong>Result</strong></div>
+			<div class="column-content transliterationResult" id="textResult">{% if text_result %}{{ text_result }}{% else %}&nbsp;{% endif %}</div>
+		</div>
+		
+		<div class="row">
+			<div class="column-label"><strong><label for="unicode_cps">Unicode (Python):</label></strong></div>
+			<div class="column-content">
+				<textarea rows=3 cols=100 id="unicode_cps", name="unicode_cps_field" readonly >{% if unicode_cp %}{{unicode_cp}}{% endif %}</textarea>
+			</div>
+		</div>
+		
+		<div class="row">
+			<div class="column-label"><strong>&nbsp;</strong></div>
+			<div class="column-content">
+				<button onClick="copyText('textResult');" id="copyResult">Copy text</button>
+				<button onClick="copyText('unicode_cps');" id="copyCodePoints">Copy Unicode</button>
+			</div>
+		</div>
+	</div>
+	
+	</form>
+	
+	
+	<div class="instructions">
+		<h4>Typing Instructions</h4>
+		<p>This application works by assuming the user utilizes Latin keyboard. To input the text, take care of the following points:</p>
+		<ol>
+			<li>The vowels <strong>'h'</strong> and <strong>'n'</strong> are written by typing <strong>'hh'</strong> and <strong>'nn'</strong> respectively. The vowel <strong>'e-acute' (é)</strong> can be inputted by typing either <strong>'é'</strong> or <strong>'ee'</strong>.</li>
+			<li>To remove the inherent vowel in a consonant (e.g. from <strong>'ba'</strong> to <strong>'b'</strong>), type the beginning of the consonant followed by a hypen/minus sign (in this case, type <strong>'b-'</strong>). Merely typing 'b' will result in the character with its default vowel ('ba').</li>
+			<li>By default, a cluster contains three syllables or four characters at most. In cases when a word's syllables are improperly clustered, <strong>clustering can be manually defined with the help of equal sign ('=') as separator</strong>. For example, Viatrix's name is not rendered as 'viat-rihh' (<span style="font-family:Proto-Altekhsnan">viat-rihh</span>), but 'vi=at-=rihh' (<span style="font-family:Proto-Altekhsnan">vi=at-=rihh</span>).</li>
+			<li>Scrivener (at least the Windows version) may improperly render the full-size 'h', 'n', and 'th' vowels when using the default Unicode code points (U+E001, U+E002, and U+E003 respectively). In this case, check the "Swap the code points of 'h', 'n', and/or 'th' for Scrivener use" option, so the U+E092, U+E093, and U+E094 code points will be used instead.</li>
+		</ol>
+	</div>
+	
+</body>
+</html>

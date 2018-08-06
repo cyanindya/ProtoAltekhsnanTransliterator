@@ -1,0 +1,33 @@
+@font-face {
+	font-family: Proto-Altekhsnan;
+	src:url('ProtoAltekhsnan.otf')
+	
+}
+
+.column-label {
+	float:left;
+	width:5%;
+	padding-left:10px;
+	padding-right:10px;
+	text-align:right
+}
+.column-content {
+	float:left;
+	width:50%
+}
+.row:after{
+	content:"";
+	display:table;
+	clear:both;
+	padding-top:3px;
+	padding-bottom:3px;
+}
+
+div.transliterationResult {
+	font-family:Proto-Altekhsnan;
+	font-size:24pt;
+}
+
+div {
+	text-align:justify;
+}
