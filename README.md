@@ -17,15 +17,21 @@ The author uses Python distribution provided by Conda, specifically [Miniconda](
     conda create --name myenv python flask
 * Type 'y' when prompted. This will create a new Conda environment. Make sure you are connected to the Internet to download the packages.
 * Once the environment is successfully created, type:
-    source activate myenv
-    activate myenv (Windows)
+  
+    `source activate myenv`  
+    `activate myenv` (Windows)
+  
 * Redirect to the directory of this project. Before running the server, set the environment variable FLASK_APP to the name of the application's Python file, i.e. *transliteration.py*. For example:
-    D:\projects\ProtoAltekhsnanLangToolkit\>set FLASK_APP=transliteration.py (CLI)
-    PS D:\projects\ProtoAltekhsnanLangToolkit\>$env:FLASK_APP = "transliteration.py" (PowerShell)
-    $ export FLASK_APP=transliteration.py (Bash)
-* Run the server by typing:
-    flask run
-    python -m flask run
+   
+    `D:\projects\ProtoAltekhsnanLangToolkit\>set FLASK_APP=transliteration.py` (CLI)  
+    `PS D:\projects\ProtoAltekhsnanLangToolkit\>$env:FLASK_APP = "transliteration.py"` (PowerShell)  
+    `$ export FLASK_APP=transliteration.py` (Bash)  
+
+* Run the server by typing:  
+
+    `flask run`  
+    `python -m flask run`
+    
 * Open the browser and access the application at http://127.0.0.1:5000/
 
 Do note that if you make changes to the code and the debugger mode of Flask is not turned on, you have to manually restart the server.
@@ -39,4 +45,4 @@ This application is tested on Google Chrome browser running on Windows 10 64-bit
 * Improper rendering when '<' and/or '>' is within input.
 
 ### Contact ###
-_Twitter:_ @euclaeptus/@exclaebur | _E-mail:_ claedonica@gmail.com
+**Twitter:** @euclaeptus/@exclaebur | **E-mail:** claedonica@gmail.com
