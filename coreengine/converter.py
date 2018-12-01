@@ -1,13 +1,17 @@
-# This is the module that serves to handle Unicode code point conversion for Proto-Altekhsnan
-# language in case the OpenType lookup doesn't work. Please note that this version still
-# disregards characters those do not exist in the font file (e.g. numbers)
+# This is the module that serves to handle Unicode code point conversion for
+# Proto-Altekhsnan language in case the OpenType lookup doesn't work. Please
+# note that this version still disregards characters those do not exist in the
+# font file (e.g. numbers)
+#
+# Currently known issues:
+# * The program does not support '<' and '>' character inputs yet (which are used
+#   for quotations.
+# * When converting certain words, the cluster may sometimes contain five characters
+#   instead of the supposed four characters at most.
+#   Tested case: "otlium" -> supposed to be "ot-=lium-"
 
-# Global dictionary containing standard characters of Proto-Altekhsnan language
-# Define the group of characters according to the OpenType lookup.
-
-## TODO: escape '<' and '>'
-import re # regex
-from timeit import default_timer as timer
+import re
+# from timeit import default_timer as timer
 
 # Defines base character groups of Proto-Altekhsnan writing system
 characterGroups = {
@@ -26,7 +30,8 @@ characterGroups = {
     "etc": ('<', '>', ' '),
 }
 
-# Dictionary for replacement of certain characters with their single Unicode character
+# Dictionary for replacement of certain characters with their single Unicode
+# character
 single_char_substitute = {
     u'sy' : u'x',
     u'ee' : u'\u00e9',
@@ -54,71 +59,75 @@ def separate_words(sentence):
         words = input2.split(" ")
     else:
         words.append(input2)
-    
+
     return words
 
 # The next step is to break down each word into syllables in Proto-Altekhsnan
 def separate_syllables_regex(word):
     syllables = []
-    
+
     syllable = ''
-    
-    # The priority is as followes:
-    # Special consonants - nga, nya, sya - vowels a, e, i, o, u, eu, n, h, e-acute
-    # For s* (s and sy), this means s does not need to be included in regular consonants
-    # Ditto for t, since it's possible for it to be 'th' (becoming vowel)
-    # Regular consonants followed by vowel
-    # Special vowels - h, n, th, e-acute, eu
-    # Regular vowels
-    rgx_pattern_vowels = 'e[eu]*|nn|hh|[aiou\u00e9-]' # th cannot be put here due to its complicated position
+
+    # The priority is as follows:
+    # 1 - Special consonants - nga, nya, sya - vowels a, e, i, o, u, eu, n, h, e-acute
+    #       For s* (s and sy), this means s does not need to be included in regular consonants
+    #       Ditto for t, since it's possible for it to be 'th' (becoming vowel)
+    # 2 - Regular consonants followed by vowel (minus 'nnn' and 'hhh')
+    # 3 - Special vowels - h, n, th, e-acute, eu
+    # 4 - Regular vowels
+    rgx_pattern_vowels = 'e[eu]*|(?<!n)(nn)|(?<!h)(hh)|[aiou\u00e9-]' # th cannot be put here due to its complicated position
     rgx_pattern_sp_consonants = 'n[gy]*|sy*' # ng*, ny*, n*, sy*, s*
-    rgx_pattern_t = 't(e[eu]*|nn|[ahiou\u00e9-])' # ng*, ny*, n*, sy*, s*
+    rgx_pattern_t = 't(e[eu]*|nn|[ahiou\u00e9-])' # tee* (with e-acute), teu*, tn, t*
     rgx_pattern_consonants = '[^aeinostu\u00e9-]'
-    
-    # =|((n[gy]*|sy*|[^aeinostu\u00e9 =-])(e[eu]*|nn|hh|[aiou\u00e9-]))|(t(e[eu]*|nn|[ahiou\u00e9-]))|(e[eu]*|nn|hh|[aiou\u00e9-])
-    rgx_pattern_full = '=|((({0}|{1})({2}))|({3})|({4}))'.format(rgx_pattern_sp_consonants, rgx_pattern_consonants,
+
+    # =|((n[gy]*|sy*|[^aeinostu\u00e9 =-])(e[eu]*|(?<!n)(nn)|(?<!h)(hh)|[aiou\u00e9-]))|(t(e[eu]*|nn|[ahiou\u00e9-]))|(e[eu]*|(?<!n)(nn)|(?<!h)(hh)|[aiou\u00e9-])
+    rgx_pattern_full = str('=' + '|' + '(' + '(({0}|{1})({2}))' + '|' + '({3})'
+                            + '|' + '({4})' + ')') \
+        .format(rgx_pattern_sp_consonants, rgx_pattern_consonants,
             rgx_pattern_vowels, rgx_pattern_t, rgx_pattern_vowels)
-    
+
     for syl in re.finditer(rgx_pattern_full, word):
         syllable = syl.group(0)
-        
+
+        print(syl.groups())
+
         # To make clustering easier, substitute several characters such as "th" with their
         # Unicode variant
         # Must be done in this way because Python is a huge jerk
         ch = [i for i in list(single_char_substitute.keys()) if i in syllable]
         if ch:
             syllable = syllable.replace(ch[0], single_char_substitute[ch[0]])
-        
-        
+
+
         # If the syllable is not in modified form (e.g. 'ha'), remove the 'a' to make
         # conversion easier
         if len(syllable) > 1 and any(cons in syllable for cons in characterGroups['consonants']) and syllable[-1] == 'a':
             syllable = syllable[:-1]
-        
+
         syllables.append(syllable)
-    
+
     # for consonant followed by vowels h, n, and th, join the separated consonant with the vowel.
     for index in range(len(syllables)):
         # To handle accidentally choosing the last item because of the -1 thing
         prevIndex = index-1 if (index - 1 >= 0) else 0
-        
+
         if (len(syllables[prevIndex]) == 1 and syllables[prevIndex]
             in characterGroups["consonants"]) and (syllables[index] in
             ("\ue000", "\ue001", "\ue002")):
             syllables[prevIndex] = ''.join(syllables[prevIndex:index+1])
             syllables[index] = ''
             syllables.remove('')
-    
+
     return syllables
 
-    
+
 # The next step is to break down each word into syllables in Proto-Altekhsnan
 # def separate_syllables(word):
     # syllables = []
-    
+
     # latin_vowel = u'aeiou\u00e9'
     # vowel_eraser = u'-'
-    
+
     # # 't' -> th
     # # 's' -> sy
     # # 'n' -> nn, ng, ny
@@ -127,25 +136,25 @@ def separate_syllables_regex(word):
     # s_connectors = latin_vowel + vowel_eraser + u'y'
     # h_connectors = latin_vowel + vowel_eraser + u'h'
     # n_connectors = latin_vowel + vowel_eraser + u'g' + u'y' + u'n'
-    
+
     # # break down into individual chars and reverse it
     # chars_list = list(word)
     # chars_list.reverse()
-    
+
     # syllable = u''
-    
+
     # # We will use character indexing because we need to predict the next character
     # for ch in chars_list[::-1]:
-        
+
         # # Add the front-most character in the word to the syllable
         # syllable += chars_list.pop()
-        
+
         # # Handle only as long as chars_list is not empty
         # if chars_list:
-        
+
             # # By default, assume the character is a consonant
             # if ch not in (latin_vowel + vowel_eraser + u'='):
-            
+
                 # # Handle special cases.
                 # if syllable[-1] == u'n':
                     # if (len(syllable) > 1 and syllable[-2] not in (u'n')) or len(syllable) == 1:
@@ -163,14 +172,14 @@ def separate_syllables_regex(word):
                         # continue
                 # else:
                     # continue
-            
+
             # else: # Otherwise, assume it's a vowel
-                # # Handle special case for 'e' because it can be 'ee' or 'eu'            
+                # # Handle special case for 'e' because it can be 'ee' or 'eu'
                 # if syllable[-1] == u'e':
                     # if (len(syllable) > 1 and syllable[-2] != u'e') or len(syllable) == 1:
                         # if chars_list[-1] in (u'e', u'u'):
                             # continue
-                        
+
         # # To make clustering easier, substitute several characters such as "th" with their
         # # Unicode variant
         # if 'sy' in syllable:
@@ -189,41 +198,41 @@ def separate_syllables_regex(word):
             # syllable = syllable.replace(u'ng', u'\ue004')
         # if 'ny' in syllable:
             # syllable = syllable.replace(u'ny', u'\ue005')
-        
+
         # # If the syllable is not in modified form (e.g. 'ha'), remove the 'a' to make
         # # conversion easier
         # if len(syllable) > 1 and syllable[-1] == 'a':
             # syllable = syllable[:-1]
-        
-        
+
+
         # # Append the syllable to the syllables list, then reset
         # syllables.append(syllable)
         # syllable = u''
-    
+
     # # for consonant followed by vowels h, n, and th, join the separated consonant with the vowel.
     # for index in range(len(syllables)):
         # # To handle accidentally choosing the last item because of the -1 thing
         # prevIndex = index-1 if (index - 1 >= 0) else 0
-        
+
         # if (len(syllables[prevIndex]) == 1 and syllables[prevIndex]
             # in characterGroups["consonants"]) and (syllables[index] in
             # ("\ue000", "\ue001", "\ue002")):
             # syllables[prevIndex] = ''.join(syllables[prevIndex:index+1])
             # syllables[index] = ''
             # syllables.remove('')
-    
-    
+
+
     # return syllables
 
 # Group the syllables into clusters to be converted. The general rule of thumb for Proto-
 # Altekhsnan is that a cluster consists either four characters OR three syllables at most.
 def cluster_syllables(syllables):
     clusters = []
-    
+
     # Prioritize clustering based on availability of separators
     if u'=' in syllables:
         clusters = [syl.split(',') for syl in (','.join(syllables)).split('=')]
-    
+
     # Otherwise, we have to do manual clustering
     else:
         while len(syllables) > 0:
@@ -235,17 +244,17 @@ def cluster_syllables(syllables):
             else:
                 clusters.append(syllables[:2])
                 syllables = syllables[2:]
-            
-    
+
+
     # Delete empty members from the split
     for cluster in clusters:
         while '' in cluster:
             cluster.remove('')
-    
-    # print(clusters)
-    
+
+    print(clusters)
+
     return clusters
-    
+
 # This function is intended to perform the actual conversion of the syllables
 def convert_cluster(cluster, forScrivener=False):
 
@@ -262,7 +271,7 @@ def convert_cluster(cluster, forScrivener=False):
             'nn' : '\ue00d', '\ue001' : '\ue00d',
             'th' : '\ue00e', '\ue002' : '\ue00e',
             'eu' : '\ue00f', '\ue003' : '\ue00f',
-            
+
             'b' : '\ue016',
             'c' : '\ue017',
             'd' : '\ue018',
@@ -282,7 +291,7 @@ def convert_cluster(cluster, forScrivener=False):
             'ng' : '\ue026', '\ue004' : '\ue026',
             'ny' : '\ue027', '\ue005' : '\ue027',
         },
-        
+
         'vertical' : {
             'e' : '\ue010',
             'i' : '\ue011',
@@ -294,7 +303,7 @@ def convert_cluster(cluster, forScrivener=False):
             'nn' : '\ue03b', '\ue001' : '\ue03b',
             'th' : '\ue03c', '\ue002' : '\ue03c',
             'eu' : '\ue03d', '\ue003' : '\ue03d',
-            
+
             'b' : '\ue028',
             'c' : '\ue029',
             'd' : '\ue02a',
@@ -315,7 +324,7 @@ def convert_cluster(cluster, forScrivener=False):
             'ny' : '\ue039', '\ue005' : '\ue039',
         },
     }
-    
+
     thirdSizeSubstitution = {
         'horizontal' : {
             'a' : '\ue05a',
@@ -328,7 +337,7 @@ def convert_cluster(cluster, forScrivener=False):
             'nn' : '\ue061', '\ue001' : '\ue061',
             'th' : '\ue062', '\ue002' : '\ue062',
             'eu' : '\ue063', '\ue003' : '\ue063',
-            
+
             'b' : '\ue064',
             'c' : '\ue065',
             'd' : '\ue066',
@@ -348,7 +357,7 @@ def convert_cluster(cluster, forScrivener=False):
             'ng' : '\ue074', '\ue004' : '\ue074',
             'ny' : '\ue075', '\ue005' : '\ue075',
         },
-        
+
         'vertical' : {
             'e' : '\ue076',
             'i' : '\ue077',
@@ -360,7 +369,7 @@ def convert_cluster(cluster, forScrivener=False):
             'nn' : '\ue07c', '\ue001' : '\ue07c',
             'th' : '\ue07d', '\ue002' : '\ue07d',
             'eu' : '\ue07e', '\ue003' : '\ue07e',
-            
+
             'b' : '\ue07f',
             'c' : '\ue080',
             'd' : '\ue081',
@@ -381,7 +390,7 @@ def convert_cluster(cluster, forScrivener=False):
             'ny' : '\ue090', '\ue005' : '\ue090',
         },
     }
-    
+
     quarterSizeSubstitution = {
         'e' : '\ue03e',
         'i' : '\ue03f',
@@ -393,7 +402,7 @@ def convert_cluster(cluster, forScrivener=False):
         'nn' : '\ue044', '\ue001' : '\ue044',
         'th' : '\ue045', '\ue002' : '\ue045',
         'eu' : '\ue046', '\ue003' : '\ue046',
-        
+
         'b' : '\ue047',
         'c' : '\ue048',
         'd' : '\ue049',
@@ -413,16 +422,16 @@ def convert_cluster(cluster, forScrivener=False):
         'ng' : '\ue057', '\ue004' : '\ue057',
         'ny' : '\ue058', '\ue005' : '\ue058',
     }
-    
+
     joined = ''.join(cluster)
     character_count = len(joined)
     syllable_count = len(cluster)
-    
+
     new_syllables = []
-    
+
     # Check the length of the cluster. Four-character cluster takes priority.
     for syllable in cluster:
-        if syllable_count == 3: # Use the third-size 
+        if syllable_count == 3: # Use the third-size
             if bool(re.match('^[' + regex_groups["consonants"] + regex_groups["vowels_all"] + '](?![' + regex_groups["vowels_non_a"] +'])', syllable)):
                 new_syllables.append(thirdSizeSubstitution['horizontal'][syllable])
             elif bool(re.match('^[' + regex_groups["consonants"] + '](?=[' + regex_groups["vowels_non_a"] +'])', syllable)):
@@ -453,9 +462,9 @@ def convert_cluster(cluster, forScrivener=False):
                 pass
 
 
-    
+
     unicode_code_points = []
-    
+
     # For the Unicode representation
     for ch in "".join(new_syllables):
         unicode_code_points.append(
@@ -463,50 +472,48 @@ def convert_cluster(cluster, forScrivener=False):
                 hex(ord(ch))
             ).replace('0x', '\\u')
         )
-	
+
     return ("".join(new_syllables), "".join(unicode_code_points))
 
-    
+
 # The actual system
 def converter(sentence, forScrivener=False):
-    start = timer()
+    # start = timer()
     words = []
     syllables = []
     clusters = []
-    
+
     final_string = u''
     unicode_code_points = u''
-    
+
     # Separate the sentence into words.
     words = separate_words(sentence)
-    
+
     # For each word, separate into syllables, then group into clusters
     for word in words:
         syllables = separate_syllables_regex(word)
         clusters = cluster_syllables(syllables)
-        
+
         # Finally, generate the converted word along with their Unicode code points
         for cluster in clusters:
             tmp = convert_cluster(cluster, forScrivener)
             final_string += tmp[0]
             unicode_code_points += tmp[1]
-        
+
         # Add space if it's not the end of the sentence
         if word != words[-1]:
             final_string += u" "
             # unicode_code_points += "\\u0020"
             unicode_code_points += "\u0020"
-    
-    stop = timer()
-    print("Time elapsed: " + str(stop-start))
-    
-    return final_string, unicode_code_points
-    
-# if __name__ == '__main__':
-    # while True:
-        # a = input("Enter a word: ")
-        # b = converter(a)
-        # print(b)
-        # print("\n")
-        
 
+    # stop = timer()
+    # print("Time elapsed: " + str(stop-start))
+
+    return final_string, unicode_code_points
+
+if __name__ == '__main__':
+    while True:
+        a = input("Enter a word: ")
+        b = converter(a)
+        print(b)
+        print("\n")
