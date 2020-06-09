@@ -9,6 +9,12 @@
 # * When converting certain words, the cluster may sometimes contain five characters
 #   instead of the supposed four characters at most.
 #   Tested case: "otlium" -> supposed to be "ot-=lium-"
+# * Separate clustering between default consonant and vowel (e.g. la=e) is still
+#   not possible. -- vertical clustering, cannot be mitigated like below.
+#   ...It actually looks normal in CSP, but not the web. Weird.
+#   It's also bug in the FONT for different reason. -- horizontal clustering in
+#   OpenOffice, can be mitigated using double separator ("==")
+#   Tested case: Inputting "c-=la=ee" becomes "c-=lee"
 
 import re
 # from timeit import default_timer as timer
@@ -89,7 +95,7 @@ def separate_syllables_regex(word):
     for syl in re.finditer(rgx_pattern_full, word):
         syllable = syl.group(0)
 
-        print(syl.groups())
+        print("Possible syllable groups found: ", syl.groups())
 
         # To make clustering easier, substitute several characters such as "th" with their
         # Unicode variant
@@ -251,7 +257,7 @@ def cluster_syllables(syllables):
         while '' in cluster:
             cluster.remove('')
 
-    print(clusters)
+    print("Final syllable clusters: ", clusters)
 
     return clusters
 
@@ -426,6 +432,7 @@ def convert_cluster(cluster, forScrivener=False):
     joined = ''.join(cluster)
     character_count = len(joined)
     syllable_count = len(cluster)
+    print("Syllable count in cluster ", cluster, ": ", syllable_count)
 
     new_syllables = []
 
@@ -460,7 +467,6 @@ def convert_cluster(cluster, forScrivener=False):
                 new_syllables.append(halfSizeSubstitution['vertical'][syllable[0]] + halfSizeSubstitution['vertical'][syllable[1]])
             else:
                 pass
-
 
 
     unicode_code_points = []
@@ -498,6 +504,7 @@ def converter(sentence, forScrivener=False):
         for cluster in clusters:
             tmp = convert_cluster(cluster, forScrivener)
             final_string += tmp[0]
+            final_string += "==" # FIXME: dirty fix for the text display due to the font bug
             unicode_code_points += tmp[1]
 
         # Add space if it's not the end of the sentence
